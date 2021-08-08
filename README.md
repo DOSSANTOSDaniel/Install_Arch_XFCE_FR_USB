@@ -1,4 +1,5 @@
 # Installation d'Arch Linux sur un média amovible
+## Encours de réalisation ! :hammer:
 
 1. Procédure d'installation d'Arch Linux 2021.08.01 avec le gestionnaire de bureau XFCE4, configuration pour la France.
 2. L'installation est spécifique pour les supports amovibles tels que clé USB.
@@ -7,3 +8,8 @@
 5. Script pour automatiser l'installation et la configuration.
 
 
+| Document | Description |
+|:--|:--|
+| install_arch.md | Procédure d'installation Arch Linux de base. |
+| install_xfce.md | Procédure d'installation et de configuration d'un environnement graphique sous XFCE4. |
+|  |  |
