@@ -29,14 +29,6 @@ SSH    : ssh root@localhost
 USB    : /dev/sdb
 ISO    : archlinux-2021.08.01-x86_64.iso
 
-* Méthode 3 :
-Vous pouvez utiliser un de mes scripts : ![Qemu_installer](https://github.com/DOSSANTOSDaniel/Qemu_installer)
-
-Exemple d'utilisation :
-```Bash
-sudo ./qemu_installer -d sdb -o /home/daniel/archlinux-2021.08.01-x86_64.iso
-```
-
 Pour cette procédure on va utiliser la méthode 1.
 
 ### Téléchargement de l'image d'installation
@@ -57,8 +49,6 @@ wget http://archlinux.mirrors.ovh.net/archlinux/iso/2021.08.01/archlinux-2021.08
 
 Cette vérification nous permet de garantir que c'est une image disque officielle.
 ```Bash
-gpg --send-keys --keyserver keyserver.ubuntu.com ?????????????????????????????????????
-
 gpg --auto-key-locate clear,wkd -v --locate-external-key pierre@archlinux.de
 
 gpg --keyserver-options auto-key-retrieve --verify archlinux-2021.08.01-x86_64.iso.sig archlinux-2021.08.01-x86_64.iso
@@ -78,7 +68,7 @@ Comparer la valeur de la somme de contrôle obtenue avec la valeur sur la page !
 
 Exemple pour l'image 2021.08.01 :(SHA1: 4904c8a6df8bac8291b7b7582c26c4da9439f1cf).
 
-### Création d'une clé USB amorçable avec le système live d'Arch Linux
+### Création d'une clé USB amorçable
 
 Tout d'abord brancher la clé USB sur un des ports de votre ordinateur.
 
@@ -117,7 +107,7 @@ Configurer le BIOS pour qu'il démarre sur votre clé USB d'installation.
 
 Brancher aussi la clé USB vierge, c'est dans ce périphérique que nous allons installer Arch Linux.
 
-### Changer la configuration du clavier pour français (temporaire):
+### Changer la configuration du clavier pour français :
 
 Attention par défaut le clavier est en QWERTY donc (loqdkeys fr-pc) :
 ```Bash
@@ -131,18 +121,13 @@ Modification du mot de passe root :
 passwd
 ```
 
-Exemple de connexion :
-```Bash
-ssh root@192.168.xx.xx
-```
-
-### Configuration de la localisation :
+### Configuration de la localisation et de l'heure système :
 
 ```Bash
 timedatectl set-timezone Europe/Paris
 ```
 
-### Configuration de l'heure du système
+Configuration de l'heure du système :
 
 Ici on va utiliser des serveurs de temps pour synchroniser l'heure et la date sur notre système.
 
@@ -208,9 +193,7 @@ Création de la troisième partition, code hexadécimal par défaut 8300 pour EX
 sgdisk --largest-new=3 /dev/sdX
 ```
 
-### Création de la partition de travail chiffrée
-
-Création de la partition et définition du mot de passe :
+Création de la partition de travail chiffrée et définition du mot de passe :
 ```Bash
 cryptsetup luksFormat /dev/sdX3
 ```
@@ -235,7 +218,7 @@ mkfs.fat -F32 /dev/sdX2
 
 Comme j'envisage d'installer Arch Linux sur ma clé USB vierge alors je ne vais pas créer de partition SWAP pour éviter au maximum l'écriture sur la clé l'USB. 
 
-### Montage des partitions
+Montage des partitions :
 
 * Partition 2 : EFI /mnt/boot.
 * Partition 3 : cryptroot EXT4 /mnt.
@@ -246,18 +229,18 @@ mount /dev/mapper/cryptroot /mnt
 mkdir /mnt/boot && mount /dev/sdX2 /mnt/boot
 ```
 
-Application des modifications de partitionnement sur fstab
-
-```Bash
-genfstab -U /mnt >> /mnt/etc/fstab
-```
-
 ## Installation de Linux et autres dépendances
 
 A l'aide de la commande pacstrap on va pouvoir installer le système de base et d'autres paquets sur le nouveau système monté sur /mnt :
 
 ```Bash
-pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib vim nano openssh grub networkmanager dosfstools ntfs-3g exfat-utils man-db man-pages man-pages-fr bash-completion
+pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib vim nano openssh grub networkmanager dosfstools ntfs-3g gvfs efibootmgr exfat-utils man-db man-pages man-pages-fr bash-completion
+```
+
+Application des modifications de partitionnement sur fstab
+
+```Bash
+genfstab -U /mnt >> /mnt/etc/fstab
 ```
 
 On va maintenant passer du système live au système qu'on vient d'installer et qui est monté sur /mnt :
@@ -321,27 +304,6 @@ Ajouter ces lignes, vous pouvez choisir un autre nom que "arch" bien sûr.
 127.0.1.1       arch.lan        arch
 ```
 
-La commande reflector va nous permettre de générer une liste des miroirs les plus rapides.
-
-```Bash
-pacman -S reflector
-
-cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
-```
-
-Ici on demande la génération des 10 plus rapides miroirs qui utilisent le protocole HTTPS, le tout sera sauvegardé dans la liste des miroirs du système.
-```Bash
-reflector --verbose --country France -l10 -p https --sort rate --save /etc/pacman.d/mirrorlist
-```
-
-Pour consulter l'état des miroirs : ![archlinux.org/mirrors](https://archlinux.org/mirrors/status/)
-
-Recherche de mises à jour du système et installation si nécessaire :
-```Bash
-pacman -Syu
-
-```
-
 Configuration d'Initramfs.
 L'objectif de initramfs est d'aider le système a monter la partition racine du système de fichier.
  
@@ -366,7 +328,7 @@ mkinitcpio -p linux
 
 ## Installation de grub
 
-Installation hybrid EFI et BIOS Boot :
+Installation hybride EFI et BIOS Boot :
 ```Bash
 grub-install --target=i386-pc --boot-directory=/boot /dev/sdX
 
@@ -375,20 +337,17 @@ grub-install --target=x86_64-efi --efi-directory=/boot --boot-directory=/boot --
 
 Configuration de grub
 
-Récupérer l'UUID de la troisième partition avec la commande (EXT4 system Linux):
-```Bash
-blkid
-```
+Récupérer l'UUID de la troisième partition avec la commande : `blkid`
 
 Dans le fichier /etc/default/grub remplacer la ligne:
 
 ```Bash
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"
 ```
-par :
+Par :
 
 ```Bash
-GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet cryptdevice=UUID=4a1a09ac-0125-4128-8db8-1a4da561c6df:cryptroot root=/dev/mapper/cryptroot /etc/default/grub
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet cryptdevice=UUID=4a1a09ac-0125-4128-8db8-1a4da561c6df:cryptroot root=/dev/mapper/cryptroot /etc/default/grub"
 ```
 Ici la partie "UUID=4a1a09ac-0125-4128-8db8-1a4da561c6df" c'est ce que nous avons récupéré avec la commande `blkid`.
 
@@ -404,7 +363,7 @@ Exemple ici avec l'utilisateur "daniel":
 useradd -m -G wheel,audio,video,optical,storage,scanner daniel
 ```
 
-Changement du mot de passe de daniel
+Changement du mot de passe de daniel :
 
 ```Bash
 passwd daniel
@@ -413,19 +372,16 @@ passwd daniel
 ### Configuration du fichier sudoers 
 
 ```Bash
-
 sudo EDITOR="nano" visudo
 ```
 
-dé-commenter la ligne : 
+Dé-commenter la ligne "# %wheel ALL=(ALL) ALL" : 
 
 ```Bash
-# %wheel ALL=(ALL) ALL
-
 %wheel ALL=(ALL) ALL
 ```
 
-### Activation de NetworkManager et du serveur OpenSSH
+Activation de NetworkManager et du serveur OpenSSH
 
 ```Bash
 systemctl enable {NetworkManager,sshd}
@@ -439,7 +395,7 @@ Systemd, attribue aux interfaces réseau des noms en fonction des composants mat
 
 Cela risque de nous poser un problème si nous voulons utiliser notre clé USB Arch Linux sur d'autres machines.
 
-Pour être sure que les interfaces ethernet et wifi ne changeant pas on va activer, la dénomination traditionnelle du système Arch Linux.
+Pour être sure que les interfaces ethernet et wifi ne changeant pas on va activer la dénomination traditionnelle du système Arch Linux.
 `
 ```Bash
 ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
@@ -484,7 +440,7 @@ pacman -S intel-ucode  # CPU Intel
 On va sortir du système démonter récursivement les points de montage sur /mnt et redémarrer.
 
 ```Bash
-logout
+exit
 
 umount -R /mnt
 

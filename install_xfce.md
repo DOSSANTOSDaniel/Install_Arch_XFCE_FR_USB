@@ -1,9 +1,32 @@
 # Installation du gestionnaire de bureau XFCE4 sur Arch Linux
 
+Nous allons tout d’abord mettre à jour notre liste de miroirs.
+
+La commande reflector va nous permettre de générer une liste miroirs dans le but de sélectionner les miroirs qui offrent le meilleure débit, ce qui va augmenter la vitesse de téléchargement de nos paquets.
+
+```Bash
+sudo pacman -S reflector
+
+sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
+```
+
+Ici on demande la génération des 10 plus rapides miroirs qui utilisent le protocole HTTPS, le tout sera sauvegardé dans la liste des miroirs du système.
+```Bash
+sudo reflector --verbose --country France -l10 -p https --sort rate --save /etc/pacman.d/mirrorlist
+```
+
+Pour consulter l'état des miroirs : ![archlinux.org/mirrors](https://archlinux.org/mirrors/status/)
+
+Recherche de mises à jour du système et installation si nécessaire :
+```Bash
+pacman -Syu
+
+```
+
 Installation du serveur graphique Xorg :
 
 ```Bash
-sudo pacman -S xorg xorg-server  ????????????????????????????????????????????????????
+sudo pacman -S xorg
 ```
 
 Installation de XFCE4 et du gestionnaire de login Lightdm
@@ -21,8 +44,7 @@ sudo systemctl enable lightdm
 Installation d'autres paquets
 
 ```Bash
-sudo pacman -S network-manager-applet leafpad capitaine-cursors arc-{gtk-theme,icon-theme} xdg-user-dirs-gtk git archlinux-wallpaper archlinux-artwork adwaita-icon-theme gnome-icon-theme-extras libreoffice-still-fr hunspell-fr firefox-{i18n-fr,ublock-origin} vlc file-
-roller evince ffmpegthumbnailer xscreensaver
+sudo pacman -S network-manager-applet leafpad capitaine-cursors arc-{gtk-theme,icon-theme} xdg-user-dirs-gtk git archlinux-wallpaper gnome-icon-theme-extras libreoffice-still-fr hunspell-fr firefox-{i18n-fr,ublock-origin} vlc ffmpegthumbnailer ntp
 ```
 
 
@@ -32,19 +54,14 @@ Configuration de Xorg en français
 sudo localectl set-x11-keymap fr pc105 --no-convert
 ```
 
-Installation de dépendances audio
+Installation de dépendances multimédia
 ```Bash
-sudo pacman -S pulseaudio pavucontrol bluez pulseaudio-{alsa,bluetooth,equalizer,jack,lirc} alsa-utils blueman
-```
-
-Installation de dépendances vidéo, multimédia :
-```Bash
-sudo pacman -S gst-plugins-{base,good,bad,ugly} gst-libav ffmpeg
+sudo pacman -S pulseaudio pavucontrol bluez pulseaudio-{alsa,bluetooth} alsa-utils blueman
 ```
 
 Support GPU
 ```Bash
-sudo pacman -S xf86-video-{vesa,ati,intel,amdgpu,nouveau,fbdev,dummy,openchrome,sisusb,vmware,qxl,voodoo} 
+sudo pacman -S --needed xorg-drivers
 ```
 
 Installation de dépendances pour imprimantes
@@ -55,63 +72,69 @@ sudo pacman -S cups foomatic-{db,db-ppds,db-gutenprint-ppds,db-nonfree,db-nonfre
 Activation de certains services :
 
 ```Bash
-sudo systemctl enable {avahi-daemon,avahi-dnsconfd,org.cups.cupsd,ntpd}
+sudo systemctl enable {cups,ntpd}
 ```
-
-* avahi-daemon   : Cups
-* avahi-dnsconfd : Cups
-* org.cups.cupsd : Cups
-* ntpd           : Synchronisation de l'heure du système via le réseau.
 
 Outils pour périphériques utilisant MTP
 ```Bash
-sudo pacman -S --needed gvfs-mtp mtpfs
+sudo pacman -S gvfs-mtp mtpfs
 ```
 
 Installation des polices de caractères
 ```Bash
-sudo pacman -S --needed noto-fonts noto-fonts-{cjk,emoji,extra} ttf-{dejavu,roboto,ubuntu-font-family,bitstream-vera,liberation,arphic-uming,baekmuk} xorg-fonts-type1 gnu-free-fonts sdl_ttf gsfonts
+sudo pacman -S noto-fonts noto-fonts-{cjk,emoji,extra} ttf-{dejavu,roboto,ubuntu-font-family,bitstream-vera,liberation,arphic-uming,baekmuk} xorg-fonts-type1 sdl_ttf gsfonts
 ```
 
 Installation de yay
 
 ```Bash
-git clone https://aur.archlinux.org/yay
-cd yay
-makepkg -sri --noconfirm
+git clone https://aur.archlinux.org/yay && cd yay
+
+makepkg -sri
 ```
 
 Installation de Pamac
 ```Bash
-yay -S --needed pamac --noconfirm
+yay -S pamac
 ```
 
-## Bonus
-
-### Ajouter une image de fond à Grub
-
-Prérequis concernant les caractéristiques de l'image de fond:
-
-1. Format conseillé: 1920x1080
-2. en: png
-
-Télécharger une image et la mettre dans /boot/grub
-
+Pour pouvoir installer des application en 32bits
 ```Bash
-sudo cp ~user/background.png /boot/grub/
+sudo nano /etc/pacman.conf
 ```
 
-Configuration de Grub concernant l'emplacement de l'image de fond :
+De-commenter la section "multilib" ainsi que la ligne en dessous :
 ```Bash
-sudo sed -i 's/#GRUB_BACKGROUND="\/path\/to\/wallpaper"/GRUB_BACKGROUND="\/boot\/grub\/background.png"/' /etc/default/grub
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+
+
+sudo pacman -Syu
 ```
 
-Nom 
+Installation des pilotes propriétaires de Nvidia si nécessaire :
 ```Bash
-sudo sed -i 's/GRUB_DISTRIBUTOR="Arch"/GRUB_DISTRIBUTOR="Arch オペレーティングシステム"/' /etc/default/grub
+sudo pacman -S nvidia-utils nvidia
 ```
 
-Mise à jour de la configuration de grub
+## Warnings firmware
+
 ```Bash
-grub-mkconfig -o /boot/grub/grub.cfg
+==> WARNING: Possibly missing firmware for module: wd719x
+==> WARNING: Possibly missing firmware for module: aic94xx
+==> WARNING: Possibly missing firmware for module: xhci_pci  
+```
+
+Solution :
+```Bash
+yay -S --needed wd719x-firmware
+
+yay -S --needed aic94xx-firmware
+
+yay -S --needed upd72020x-fw
+```
+
+Redémarrer le système :
+```Bash
+sudo reboot
 ```
