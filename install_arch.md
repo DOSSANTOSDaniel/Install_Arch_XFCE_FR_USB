@@ -134,9 +134,9 @@ Ici on va utiliser des serveurs de temps pour synchroniser l'heure et la date su
 Serveurs de temps français ici: ![www.pool.ntp.org](https://www.pool.ntp.org/zone/fr)
 
 ```Bash
-sed -i 's/#NTP=/NTP=/g' /etc/systemd/timesyncd.conf
+sed -i 's/#NTP=/NTP=/' /etc/systemd/timesyncd.conf
 
-sed -i 's/#FallbackNTP=0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org/FallbackNTP=0.fr.pool.ntp.org 1.fr.pool.ntp.org 2.fr.pool.ntp.org 3.fr.pool.ntp.org/g' /etc/systemd/timesyncd.conf
+sed -i 's/#FallbackNTP=0.arch.pool.ntp.org 1.arch.pool.ntp.org 2.arch.pool.ntp.org 3.arch.pool.ntp.org/FallbackNTP=0.fr.pool.ntp.org 1.fr.pool.ntp.org 2.fr.pool.ntp.org 3.fr.pool.ntp.org/' /etc/systemd/timesyncd.conf
 ```
 
 Activation de la synchronisation :
@@ -321,7 +321,7 @@ Vers celle là :
 HOOKS=(base udev block keyboard keymap encrypt filesystems fsck)
 ```
 
-Appliquer le modifications :
+Appliquer la modification :
 ```Bash
 mkinitcpio -p linux
 ```
@@ -347,8 +347,14 @@ GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"
 Par :
 
 ```Bash
-GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet cryptdevice=UUID=4a1a09ac-0125-4128-8db8-1a4da561c6df:cryptroot root=/dev/mapper/cryptroot /etc/default/grub"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet cryptdevice=UUID='UUID de la partition 3 ici':cryptroot root=/dev/mapper/cryptroot /etc/default/grub"
 ```
+
+Exemple :
+```Bash
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet cryptdevice=UUID=UUID=4a1a09ac-0125-4128-8db8-1a4da561c6df:cryptroot root=/dev/mapper/cryptroot /etc/default/grub"
+```
+
 Ici la partie "UUID=4a1a09ac-0125-4128-8db8-1a4da561c6df" c'est ce que nous avons récupéré avec la commande `blkid`.
 
 Application des configurations de Grub :

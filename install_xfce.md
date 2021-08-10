@@ -108,7 +108,6 @@ De-commenter la section "multilib" ainsi que la ligne en dessous :
 [multilib]
 Include = /etc/pacman.d/mirrorlist
 
-
 sudo pacman -Syu
 ```
 
@@ -127,11 +126,11 @@ sudo pacman -S nvidia-utils nvidia
 
 Solution :
 ```Bash
-yay -S --needed wd719x-firmware
+yay -S wd719x-firmware
 
-yay -S --needed aic94xx-firmware
+yay -S aic94xx-firmware
 
-yay -S --needed upd72020x-fw
+yay -S upd72020x-fw
 ```
 
 Redémarrer le système :
