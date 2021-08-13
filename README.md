@@ -1,15 +1,44 @@
-# Installation d'Arch Linux sur un média amovible
-## Encours de réalisation ! :hammer:
+# Installations d'Arch Linux
+## En cours de réalisation ! :hammer:
 
-1. Procédure d'installation d'Arch Linux 2021.08.01 avec le gestionnaire de bureau XFCE4, configuration pour la France.
-2. L'installation est spécifique pour les supports amovibles tels que clé USB.
-3. La configuration de Grub est hybride (EFI/Bios) dans le but d'être compatible avec plusieurs machines différentes.
-4. La partition de travail est chiffrée avec LUKS (Linux Unified Key Setup).
-5. Script pour automatiser l'installation et la configuration.
-
+## Installation spécifique pour les supports amovibles à mémoire flash NAND tels que clé USB,SSD,carte SD... .
 
 | Document | Description |
 |:--|:--|
-| install_arch.md | Procédure d'installation Arch Linux de base. |
-| install_xfce.md | Procédure d'installation et de configuration d'un environnement graphique sous XFCE4. |
-|  |  |
+| before_install.md | Prérequis avant installation. |
+| install_arch.md | Installation d'Arch Linux de base. |
+| install_xfce.md | Installation et configuration d'un environnement graphique sous XFCE4. |
+| install_arch_xfce.sh | Script pour automatiser l'installation et la configuration. |
+
+```
+                          Controller
+                              ▲
+                              │
+                  ┌───────────┼──────────────────────────────────────────────┐
+                  │           │                                              │
+                  │     ┌─────┴────┐    ┌────────────────────────────────┐   │
+                  │     │          │    │                                │   │
+┌─────────────────┤     │ ┌──────┐ │    │                                │   │
+│                 │     │ │ RISC │ │    │                                │   │
+│   ┌─┐           │     │ └──────┘ │    │                                │   │
+│   │ │           │     │          │    │                                │   │
+│   └─┘           │     │ ┌─────┐  │    │                                │   │
+│                 │     │ │ RAM │  │    │       NAND flash memory        │   │
+│   ┌─┐           │     │ └─────┘  │    │                                │   │
+│   │ │           │     │          │    │                                │   │
+│   └─┘           │     │ ┌─────┐  │    │                                │   │
+│                 │     │ │ ROM │  │    │                                │   │
+└─────────────────┤     │ └─────┘  │    │                                │   │
+                  │     │          │    │                                │   │
+                  │     └──────────┘    └────────────────────────────────┘   │
+                  │                                                          │
+                  └──────────────────────────────────────────────────────────┘
+```
+
+
+## Installation UEFI en dual-boot avec Windows 10
+
+| Document | Description |
+|:--|:--|
+| before_install.md |  |
+| install_arch_win.md |  |
