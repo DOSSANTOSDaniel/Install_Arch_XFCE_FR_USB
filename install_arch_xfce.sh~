@@ -141,7 +141,7 @@ conf_timezone() {
   
   arch-chroot /mnt locale-gen
   
-  arch-chroot /mnt export LANG=fr_FR.UTF-8
+  #export LANG=fr_FR.UTF-8
 } 
 
 
