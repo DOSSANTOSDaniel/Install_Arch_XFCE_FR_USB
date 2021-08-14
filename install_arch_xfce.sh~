@@ -333,7 +333,7 @@ timedatectl set-ntp true
 system_partitions
 
 # System install and dependances
-pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib vim nano openssh grub networkmanager dosfstools ntfs-3g gvfs efibootmgr exfat-utils man-db man-pages man-pages-fr bash-completion arch-install-scripts
+pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib vim nano openssh grub networkmanager dosfstools ntfs-3g gvfs efibootmgr exfat-utils man-db man-pages man-pages-fr bash-completion arch-install-scripts f2fs-tools 
 
 # Apply partition table configs in fstab
 genfstab -U /mnt >> /mnt/etc/fstab
