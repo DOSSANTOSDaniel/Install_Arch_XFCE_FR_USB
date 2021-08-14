@@ -194,7 +194,7 @@ Pacstrap se chroot dans la nouvelle racine et par la suite se comporte comme pac
 Installation du système de base et d'autres paquets sur la nouvelle racine (/mnt) :
 
 ```Bash
-pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib vim nano openssh grub networkmanager dosfstools ntfs-3g gvfs efibootmgr exfat-utils man-db man-pages man-pages-fr bash-completion
+pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib vim nano openssh grub networkmanager dosfstools ntfs-3g gvfs efibootmgr exfat-utils man-db man-pages man-pages-fr bash-completion arch-install-scripts
 ```
 
 ### Génération du fichier fstab
