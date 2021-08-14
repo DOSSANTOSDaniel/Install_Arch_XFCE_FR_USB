@@ -21,7 +21,7 @@ Pour consulter l'état des miroirs : ![archlinux.org/mirrors](https://archlinux.
 Recherche de mises à jour du système et installation si nécessaire :
 
 ```Bash
-pacman -Syu
+sudo pacman -Syu
 
 ```
 
