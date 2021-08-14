@@ -128,25 +128,6 @@ C'est un script qui a pour objectif de lancer différents démons qui se trouven
 [Arch_boot_process](https://wiki.archlinux.org/title/Arch_boot_process)
 
 
-# Projet Dual-Boot avec windows 10
-
-Installation d'Arch Linux à coté de Windows 10 en mode GPT/UEFI. 
-
-## Configuration du bootloader
-
-L'installation d'Arch Linux va devoir suivre le même schéma de démarrage que Windows 10 (GPT/UEFI).
-
-Windows durant sont installation il crée une partition EFI de 100 Mo.
-
-On va dont utiliser cette partition et on la monte sur le répertoire /efi de notre futur système.
-
-## A faire sur l'ordinateur Windows
-
-- Désactiver le démarrage rapide et l'hibernation.
-- Faire de la place pour le futur système Arch.
-
-
-
 
 
 

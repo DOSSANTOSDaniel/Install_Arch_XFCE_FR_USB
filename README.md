@@ -34,11 +34,3 @@
                   │                                                          │
                   └──────────────────────────────────────────────────────────┘
 ```
-
-
-## Installation UEFI en dual-boot avec Windows 10
-
-| Document | Description |
-|:--|:--|
-| before_install.md |  |
-| install_arch_win.md |  |
