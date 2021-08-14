@@ -141,7 +141,6 @@ conf_timezone() {
   
   arch-chroot /mnt locale-gen
   
-  #export LANG=fr_FR.UTF-8
 } 
 
 
@@ -330,6 +329,8 @@ check_disk_name $disk_name
 timedatectl set-timezone Europe/Paris
 timedatectl set-ntp true
 
+export LANG=fr_FR.UTF-8
+
 system_partitions
 
 # System install and dependances
@@ -366,7 +367,8 @@ graphical_install
 install_graphical_apps
 
 # Xorg french config
-arch-chroot /mnt localectl set-x11-keymap fr pc105 --no-convert
+#arch-chroot /mnt localectl set-x11-keymap fr pc105 --no-convert
+arch-chroot /mnt localectl set-x11-keymap fr pc105
 
 # Exit install
 umount --recursive /mnt && shutdown now
