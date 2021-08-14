@@ -115,10 +115,10 @@ system_partitions() {
   echo "$disk_pass" | cryptsetup -q open /dev/"${disk_name}"3 cryptroot
   
   # Format crypted partition
-  mkfs.f2fs -f /dev/mapper/cryptroot
+  yes | mkfs.f2fs -f /dev/mapper/cryptroot
   
   # Format partition 2 EFI
-  mkfs.fat -F32 /dev/"${disk_name}"2
+  yes | mkfs.fat -F32 /dev/"${disk_name}"2
   
   # Mount partitions 2 and 3
   mount -t f2fs /dev/mapper/cryptroot /mnt
@@ -290,13 +290,13 @@ do
       exit 1
       ;;
     d)
-      readonly disk_crypt="${OPTARG}"
+      readonly disk_crypt="${OPTARG:?'Nom disque et pass obligatoire !'}"
       ;;
     u)
-      readonly user_pass="${OPTARG:=userx:usertemppass}"
+      readonly user_pass="${OPTARG:='userx:usertemppass'}"
       ;;
     n)
-      readonly host_name="${OPTARG:=Arch}"
+      readonly host_name="${OPTARG:='Arch'}"
       ;;      
     :)
       echo "L'option nécessite un argument."
@@ -333,7 +333,7 @@ timedatectl set-ntp true
 system_partitions
 
 # System install and dependances
-pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib vim nano openssh grub networkmanager dosfstools ntfs-3g gvfs efibootmgr exfat-utils man-db man-pages man-pages-fr bash-completion arch-install-scripts f2fs-tools 
+pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib grub networkmanager openssh dosfstools efibootmgr exfat-utils man-db man-pages man-pages-fr texinfo arch-install-scripts f2fs-tools 
 
 # Apply partition table configs in fstab
 genfstab -U /mnt >> /mnt/etc/fstab
