@@ -9,12 +9,27 @@
 # Version: 1.0                                      
 # Bash_Version: 5.0.17(1)-release                                     
 #--------------------------------------------------#
-# Description:                                      
+# Description: 
+# Ce script permet d'automatiser l'iinstallation d'Arch Linux sur clé USB
 #                                                   
-#                                                   
-# Options:                                          
-#                                                   
-# Usage: ./install_arch_xfce.sh                                            
+#                                                                                                      
+#  Usage:
+#  ./install_arch_xfce.sh -[h|v]
+#  
+#  ./install_arch_xfce.sh -d <Disque>:<Passe chiffrement> -u <Nom utilisateur>:<Passe utilisateur> -n <Nom machine>
+#  
+#  -h : Affiche l'aide.
+#  -v : Affiche la version.
+#  
+#  -n : Nom de la machine.
+#  -u : Nom utilisateur suivie du mot de passe utilisateur.  Ex: (daniel:****)
+#  -d : Nom du disque suivie sa passe phrase de chiffrement. Ex: (sda:***************)
+# 
+#
+#  Exemples:
+#  * Pour Installer Arch Linux sur un périphérique physique (hd, ssd, usb):
+#  sudo "${0}" -d sdb:*************** -u daniel:******** -n Arch
+#
 #                                                   
 # Limits:                                           
 #                                                   
@@ -72,6 +87,17 @@ EOF
 }
 
 
+execute_it_again() {
+if [[ -f /tmp/arch_install_usb ]]
+then
+  alert_info "E" "Impossible de relancer le scripte, il faut redémarrer d'abord !"
+  exit 1
+fi
+
+touch /tmp/arch_install_usb
+}
+
+
 check_disk_name() {
   local disk="$1"
   local regex="^[s][d][a-z]$"
@@ -80,8 +106,29 @@ check_disk_name() {
   then
     echo "Disque : /dev/${disk}"
   else
-    echo 'Erreur de saisie (nom du disque)!'
+    alert_info 'E' 'Erreur de saisie (nom du disque)!'
+    usage
     exit 1
+  fi
+}
+
+alert_info() {
+  local msg1="${1}" # $1 : E = ERREUR, I = INFO
+  local msg2="${2}" # $2 : Informations.
+
+  #Colors
+  local red="\033[0;31m"
+  local green="\033[0;32m"
+  local nc="\033[0m" # Stop Color
+
+  if [[ ${1} == 'E' ]]
+  then
+    echo -e "\n${red}>>> $msg1 : $msg2 ...${nc}\n"
+  elif [[ ${1} == 'I' ]]
+  then
+    echo -e "\n${green}>>> $msg1 : $msg2 ...${nc}\n"
+  else
+    echo -e "\n>>> $msg2 ...\n"
   fi
 }
 
@@ -94,6 +141,9 @@ system_partitions() {
   # Clean and create GPT table
   sgdisk --zap-all /dev/"${disk_name}"
   sgdisk --clear /dev/"${disk_name}"
+
+  alert_info 'I' "Etat du disque ${disk_name}"
+  
   sgdisk --verify /dev/"${disk_name}"
   
   # Partition 1 10Mb BIOS Boot
@@ -139,6 +189,8 @@ conf_timezone() {
   echo 'KEYMAP=fr-latin9' > /mnt/etc/vconsole.conf
   
   arch-chroot /mnt locale-gen
+
+  arch-chroot /mnt export LANG=fr_FR.UTF-8
   
 } 
 
@@ -185,9 +237,6 @@ conf_user() {
   
   # Config sudoers file
   sed -i.bak 's/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /mnt/etc/sudoers
-  
-  # Check syntax
-  arch-chroot /mnt visudo --check
 }
 
 
@@ -196,7 +245,7 @@ conf_others_options() {
   arch-chroot /mnt ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
   
   #Systemdd journal in RAM
-  sed -i 's/#Storage=auto/Storage=volatile/' /mnt/etc/systemd/journald.conf
+  sed -i.bak 's/#Storage=auto/Storage=volatile/' /mnt/etc/systemd/journald.conf
   
   # no Overfill RAM systemd limit to 50M
   sed -i 's/#RuntimeMaxUse=/RuntimeMaxUse=50M/' /mnt/etc/systemd/journald.conf
@@ -254,6 +303,8 @@ install_graphical_apps() {
 
 
 #### Main ####
+
+execute_it_again
 
 # User
 user_pass=''
@@ -330,7 +381,11 @@ timedatectl set-ntp true
 
 export LANG=fr_FR.UTF-8
 
+alert_info "I" "Partitionnement du disque /dev/${disk_name}" 
+
 system_partitions
+
+alert_info "I" "Installation du système de base" 
 
 # System install and dependances
 pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib grub networkmanager openssh dosfstools efibootmgr exfat-utils man-db man-pages man-pages-fr texinfo arch-install-scripts f2fs-tools 
@@ -347,7 +402,11 @@ sed -i.bak 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsc
   
 arch-chroot /mnt mkinitcpio -p linux
 
+alert_info "I" "Configuration de GRUB" 
+
 conf_grub
+
+alert_info "I" "Création du nouvel utilisateur $username_name" 
 
 conf_user
 
@@ -359,6 +418,8 @@ conf_others_options
 
 ########## Graphic Install
 
+alert_info "I" "Installation de XFCE et autres applications !" 
+
 update_mirrors
 
 graphical_install
@@ -366,8 +427,12 @@ graphical_install
 install_graphical_apps
 
 # Xorg french config
-#arch-chroot /mnt localectl set-x11-keymap fr pc105 --no-convert
-arch-chroot /mnt localectl set-x11-keymap fr pc105
+arch-chroot /mnt localectl set-x11-keymap fr pc105 --no-convert
+arch-chroot /mnt localectl set-x11-keymap fr pc105 --no-convert
+
+arch-chroot /mnt localectl list-x11-keymap-layouts
+
+alert_info "I" "FIN du script !" 
 
 # Exit install
 umount --recursive /mnt && shutdown now
