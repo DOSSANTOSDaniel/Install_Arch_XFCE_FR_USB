@@ -1,5 +1,4 @@
 # Installation d'Arch Linux
-## :hammer: En cours de réalisation ! :hammer:
 
 ## Installation spécifique pour les supports amovibles à mémoire flash NAND tels que clé USB,SSD,carte SD... .
 
