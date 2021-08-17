@@ -56,7 +56,7 @@ Les données par défaut sont :
 
 #### Limites des options
 
-* Le scripte doit être exécuté avec les droits root.
+* Le script doit être exécuté avec les droits root.
 * L'installation ne se connecte pas automatiquement sur une connexion WIFI.
 * L'ordinateur doit être connecté à internet par câble,(si non configuration manuelle du WIFI).
 * Cette installation n'est pas recommandée pour les disques HDD.
