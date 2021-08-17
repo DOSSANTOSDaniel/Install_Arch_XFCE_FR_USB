@@ -132,177 +132,25 @@ alert_info() {
   fi
 }
 
-########## Basic Install functions ##########
+start_end() {
+clear
 
-system_partitions() {
-  pacman -Sy --needed f2fs-tools --noconfirm
-  
-  # Creating Partitions
-  # Clean and create GPT table
-  sgdisk --zap-all /dev/"${disk_name}"
-  sgdisk --clear /dev/"${disk_name}"
+cat <<"EOF"
 
-  alert_info 'I' "Etat du disque ${disk_name}"
-  
-  sgdisk --verify /dev/"${disk_name}"
-  
-  # Partition 1 10Mb BIOS Boot
-  sgdisk --new=1::+10M /dev/"${disk_name}"
-  sgdisk --typecode=1:ef02 /dev/"${disk_name}"
-  
-  # Partition 2 250Mb EFI FAT32
-  sgdisk --new=2::+250M /dev/"${disk_name}"
-  sgdisk --typecode=2:ef00 /dev/"${disk_name}"
-  
-  # Partition 3 EXT4
-  sgdisk --largest-new=3 /dev/"${disk_name}"
-  
-  # Create a crypted partition
-  echo "$disk_pass" | cryptsetup -q luksFormat /dev/"${disk_name}"3
-  
-  # Unlock partition
-  echo "$disk_pass" | cryptsetup -q open /dev/"${disk_name}"3 cryptroot
-  
-  # Format crypted partition
-  yes | mkfs.f2fs -f /dev/mapper/cryptroot
-  
-  # Format partition 2 EFI
-  yes | mkfs.fat -F32 /dev/"${disk_name}"2
-  
-  # Mount partitions 2 and 3
-  mount -t f2fs /dev/mapper/cryptroot /mnt
-  
-  mkdir /mnt/boot && mount /dev/"${disk_name}"2 /mnt/boot
-}
+    _    ____   ____ _   _     ___ _   _ ____ _____  _    _     _
+   / \  |  _ \ / ___| | | |   |_ _| \ | / ___|_   _|/ \  | |   | |
+  / _ \ | |_) | |   | |_| |    | ||  \| \___ \ | | / _ \ | |   | |
+ / ___ \|  _ <| |___|  _  |    | || |\  |___) || |/ ___ \| |___| |___
+/_/   \_\_| \_\\____|_| |_|___|___|_| \_|____/ |_/_/   \_\_____|_____|
+                         |_____|
 
-
-conf_timezone() {
-  ln -sf /mnt/usr/share/zoneinfo/Europe/Paris /mnt/etc/localtime
-  
-  arch-chroot /mnt hwclock --systohc
-  
-  # Lang system 
-  sed -i 's/#fr_FR.UTF-8 UTF-8/fr_FR.UTF-8 UTF-8/g' /mnt/etc/locale.gen
-  
-  echo 'LANG=fr_FR.UTF-8' > /mnt/etc/locale.conf
-  
-  echo 'KEYMAP=fr-latin9' > /mnt/etc/vconsole.conf
-  
-  arch-chroot /mnt locale-gen
-
-  arch-chroot /mnt export LANG=fr_FR.UTF-8
-  
-} 
-
-
-conf_network() {
-  # Network config
-  echo "$host_name" > /mnt/etc/hostname
-  
-  cat <<EOF>> /mnt/etc/hosts
-   
-  127.0.0.1       localhost
-  ::1             localhost
-  127.0.1.1       ${host_name}.lan        $host_name
 EOF
+
+sleep 2
 }
-
-
-conf_grub() {
-  # Install GRUB
-  arch-chroot /mnt grub-install --target=i386-pc --boot-directory=/boot /dev/"${disk_name}"
-  
-  arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --boot-directory=/boot --removable --recheck
-  
-  # UUID of crypted partition 
-  uuid_part3=$(blkid /dev/"${disk_name}"3 -s UUID -o value)
-  
-  # Config to Grub boot with crypted partition 
-  sed -i.bak "s/loglevel=3 quiet/loglevel=3 quiet cryptdevice=UUID=${uuid_part3}:cryptroot root=\/dev\/mapper\/cryptroot/" /mnt/etc/default/grub
-  
-  # Change Grub background
-  cp background.png /mnt/boot/grub/ || grub_background=false
-  
-  $grub_background && sed -i 's/#GRUB_BACKGROUND="\/path\/to\/wallpaper"/GRUB_BACKGROUND="\/boot\/grub\/background.png"/' /mnt/etc/default/grub
-  
-  # Update grub configs
-  arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
-}
-
-
-conf_user() {
-  # Create new user
-  arch-chroot /mnt useradd -m -G wheel "$username_name"
-  arch-chroot /mnt bash -c "echo ${username_name}:${username_pass} | chpasswd"
-  
-  # Config sudoers file
-  sed -i.bak 's/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /mnt/etc/sudoers
-}
-
-
-conf_others_options() {
-  # No adapt to hardware the network interface name
-  arch-chroot /mnt ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
-  
-  #Systemdd journal in RAM
-  sed -i.bak 's/#Storage=auto/Storage=volatile/' /mnt/etc/systemd/journald.conf
-  
-  # no Overfill RAM systemd limit to 50M
-  sed -i 's/#RuntimeMaxUse=/RuntimeMaxUse=50M/' /mnt/etc/systemd/journald.conf
-  
-  # Microcodes support
-  # CPU AMD  : amd-ucode
-  # CPU Intel: intel-ucode
-  pacstrap /mnt amd-ucode intel-ucode 
-}
-
-########## Graphic Install functions ##########
-
-update_mirrors() {
-  pacstrap /mnt reflector rsync
-  
-  cp /mnt/etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist.bak
-  
-  arch-chroot /mnt reflector --verbose --country France -l20 -p https,rsync --sort rate --save /etc/pacman.d/mirrorlist
-  
-  arch-chroot /mnt pacman -Sy
-}
-
-
-graphical_install() {
-  # Install Xorg and GPU support
-  pacstrap /mnt xorg xorg-drivers
-  
-  # xfce and lightdm install
-  pacstrap /mnt xfce4 xfce4-goodies lightdm lightdm-{gtk-greeter,gtk-greeter-settings}
-  
-  # Systemd enable lightdm
-  arch-chroot /mnt systemctl enable lightdm
-}
-
-
-install_graphical_apps() {
-  # Install others apps
-  pacstrap /mnt network-manager-applet leafpad capitaine-cursors arc-{gtk-theme,icon-theme} xdg-user-dirs-gtk git archlinux-wallpaper gnome-icon-theme-extras libreoffice-still-fr hunspell-fr firefox-{i18n-fr,ublock-origin} vlc ntp ffmpegthumbnailer
-  
-  # Audio supports
-  pacstrap /mnt pulseaudio pavucontrol bluez pulseaudio-{alsa,bluetooth} alsa-utils blueman
-  
-  # Printer supports
-  pacstrap /mnt cups foomatic-{db,db-ppds,db-gutenprint-ppds,db-nonfree,db-nonfree-ppds} gutenprint system-config-printer
-  
-  # Device use MTP
-  pacstrap /mnt gvfs-mtp mtpfs
-  
-  # Fonts
-  pacstrap /mnt noto-fonts noto-fonts-{cjk,emoji,extra} ttf-{dejavu,roboto,ubuntu-font-family,bitstream-vera,liberation,arphic-uming,baekmuk} xorg-fonts-type1 sdl_ttf gsfonts
-  
-  # Support 32 bits apps
-  sed -i.bak '/#\[multilib\]/,/#Include/ s/#//' /mnt/etc/pacman.conf
-}
-
 
 #### Main ####
+start_end
 
 execute_it_again
 
@@ -316,12 +164,23 @@ disk_crypt=''
 host_name=''
 
 # Grub
-grub_background=''
+grub_background=true
 
+# Keyboard layout
+Keyboard_layout='fr-latin9'
+
+# Localization language
+language='fr_FR.UTF-8'
+
+# Localization
+geo_locale='Europe/Paris'
+
+# Export function to chroot env
+export -f alert_info
 
 if [[ $(id -u) -ne 0 ]]
 then
-  echo "Le script doit être lancé en tant que root"
+  alert_info "E" "Le script doit être lancé en tant que root"
   usage
   exit 1
 fi
@@ -348,12 +207,12 @@ do
       readonly host_name="${OPTARG:='Arch'}"
       ;;      
     :)
-      echo "L'option nécessite un argument."
+      alert_info "E" "L'option nécessite un argument."
       usage
       exit 1
       ;;
     \?)
-      echo "Option invalide !"
+      alert_info "E" "Option invalide !"
       usage
       exit 1
       ;;
@@ -371,68 +230,251 @@ username_pass="$(echo "$user_pass" | cut -d: -f2)"
 disk_name="$(echo "$disk_crypt" | cut -d: -f1)"
 disk_pass="$(echo "$disk_crypt" | cut -d: -f2)"
 
-check_disk_name $disk_name
+check_disk_name "$disk_name"
 
-########## Basic Install
+########## Basic Install ##############################
+#######################################################
 
-# Archiso conf timezone
-timedatectl set-timezone Europe/Paris
+########## Archiso configuring timezone
+########################################
+timedatectl set-timezone $geo_locale
 timedatectl set-ntp true
 
-export LANG=fr_FR.UTF-8
+export LANG=$language
 
-alert_info "I" "Partitionnement du disque /dev/${disk_name}" 
+########## Partitioning
+########################################
+alert_info "I" "Début du partitionnement, disque : /dev/${disk_name}" 
+sleep 2
+  
+# Creating Partitions
+# Clean and create GPT table
+sgdisk --zap-all /dev/"${disk_name}"
+sgdisk --clear /dev/"${disk_name}"
 
-system_partitions
+alert_info 'I' "Etat du disque ${disk_name}"
+  
+sgdisk --verify /dev/"${disk_name}"
+  
+# Partition 1 10Mb BIOS Boot
+sgdisk --new=1::+10M /dev/"${disk_name}"
+sgdisk --typecode=1:ef02 /dev/"${disk_name}"
+  
+# Partition 2 250Mb EFI FAT32
+sgdisk --new=2::+250M /dev/"${disk_name}"
+sgdisk --typecode=2:ef00 /dev/"${disk_name}"
+  
+# Partition 3 F2FS linux system
+sgdisk --largest-new=3 /dev/"${disk_name}"
+  
+# Encrypt a Linux partition 3
+echo "$disk_pass" | cryptsetup -q luksFormat /dev/"${disk_name}"3
+  
+# Unlock partition
+echo "$disk_pass" | cryptsetup -q open /dev/"${disk_name}"3 cryptroot
+  
+# Format encrypt partition (F2FS)
+yes | mkfs.f2fs -f /dev/mapper/cryptroot
+  
+# Format partition 2 EFI (FAT32)
+yes | mkfs.fat -F32 /dev/"${disk_name}"2
+  
+# Mount partitions 2 and 3
+mount -t f2fs /dev/mapper/cryptroot /mnt
+  
+mkdir /mnt/boot && mount /dev/"${disk_name}"2 /mnt/boot
 
+
+########## Install base system
+########################################
 alert_info "I" "Installation du système de base" 
 
-# System install and dependances
-pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib grub networkmanager openssh dosfstools efibootmgr exfat-utils man-db man-pages man-pages-fr texinfo arch-install-scripts f2fs-tools 
+# System installation and dependances
+pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib grub networkmanager openssh dosfstools efibootmgr exfat-utils man-db man-pages man-pages-fr texinfo arch-install-scripts f2fs-tools
 
 # Apply partition table configs in fstab
 genfstab -U /mnt >> /mnt/etc/fstab
 
-conf_timezone
+# Copy Grub background
+cp background.png /mnt/root
 
-conf_network
+########## Chroot ENV
+########################################
+# Enter in the new system (chroot) default shell is Bash
+arch-chroot /mnt << EOF
 
-# Config mkinitcpio HOOKS
-sed -i.bak 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck)/HOOKS=(base udev block keymap keyboard encrypt filesystems fsck)/g' /mnt/etc/mkinitcpio.conf
+# Setup lacalization and language
+
+ln -sf /usr/share/zoneinfo/$geo_locale /etc/localtime
+
+# Setup clock
+hwclock --systohc
+
+# Setup time server
+systemctl enable systemd-timesyncd
+
+sed -i 's/#NTP=/NTP=/' /etc/systemd/timesyncd.conf
+
+sed -i 's/^#FallbackNTP=.*/FallbackNTP=0.fr.pool.ntp.org 1.fr.pool.ntp.org 2.fr.pool.ntp.org 3.fr.pool.ntp.org/' /etc/systemd/timesyncd.conf
+
+timedatectl set-ntp true
+
+# Setup time other  
+timedatectl set-local-rtc 0
+timedatectl --adjust-system-clock set-local-rtc 0
+    
+# Setup system language and keyboard layout 
+sed -i 's/#'${language}' UTF-8/'${language}' UTF-8/g' /etc/locale.gen
+
+echo "LANG=${language}" > /etc/locale.conf  
+echo "LANGUAGE=fr_FR" >> /etc/locale.conf
+echo "KEYMAP=$Keyboard_layout" > /etc/vconsole.conf
   
-arch-chroot /mnt mkinitcpio -p linux
+locale-gen
+
+# Setup network
+echo "$host_name" > /etc/hostname
+  
+echo "  
+127.0.0.1       localhost
+::1             localhost
+127.0.1.1       ${host_name}.lan        $host_name
+" >> /etc/hosts 
+
+# Setup mkinitcpio HOOKS
+alert_info "I" "Configuration d'Initramfs"
+sleep 2
+
+sed -i.bak 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck)/HOOKS=(base udev block keymap keyboard encrypt filesystems fsck)/g' /etc/mkinitcpio.conf
+  
+mkinitcpio -p linux
 
 alert_info "I" "Configuration de GRUB" 
+sleep 2
 
-conf_grub
+# Install and configure GRUB
+grub-install --target=i386-pc --boot-directory=/boot /dev/"${disk_name}"  
+grub-install --target=x86_64-efi --efi-directory=/boot --boot-directory=/boot --removable --recheck
+  
+# Config to Grub boot with crypted partition 
+sed -i.bak "s/loglevel=3 quiet/loglevel=3 quiet cryptdevice=UUID=$(blkid /dev/"${disk_name}"3 -s UUID -o value):cryptroot root=\/dev\/mapper\/cryptroot/" /etc/default/grub
 
+# Copy Grub background to /boot
+cp /root/background.png /boot/grub || grub_background=false
+  
+# Change Grub background
+$grub_background && sed -i 's/#GRUB_BACKGROUND="\/path\/to\/wallpaper"/GRUB_BACKGROUND="\/boot\/grub\/background.png"/' /etc/default/grub
+  
+# Update GRUB configurations
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# Create a new user
 alert_info "I" "Création du nouvel utilisateur $username_name" 
+sleep 2
 
-conf_user
+useradd -m -G wheel "$username_name"
+echo ${username_name}:${username_pass} | chpasswd
+
+# Config sudoers file
+sed -i.bak 's/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
 
 # Enable systemd services (NetworkManager and SSHD)
-arch-chroot /mnt systemctl enable {NetworkManager,sshd}
+systemctl enable {NetworkManager,sshd}
 
-conf_others_options
+# Optional configurations
+# No adapt network interface name with hardware setup 
+ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
+  
+# Systemd journal in RAM
+sed -i.bak 's/#Storage=auto/Storage=volatile/' /etc/systemd/journald.conf
+  
+# No Overfill RAM systemd limit to 50M
+sed -i 's/#RuntimeMaxUse=/RuntimeMaxUse=50M/' /etc/systemd/journald.conf
+  
+# Microcodes support
+# CPU AMD  : amd-ucode
+# CPU Intel: intel-ucode
+pacman -Sy --needed amd-ucode intel-ucode --noconfirm
+  
 
-
-########## Graphic Install
+########## Graphic Install ############################
+#######################################################
 
 alert_info "I" "Installation de XFCE et autres applications !" 
+sleep 2
 
-update_mirrors
+# Update mirrors
+pacman -Sy --needed reflector rsync --noconfirm
 
-graphical_install
+cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
 
-install_graphical_apps
+reflector --verbose --country France -l20 -p https,rsync --sort rate --save /etc/pacman.d/mirrorlist
 
-# Xorg french config
-arch-chroot /mnt localectl set-x11-keymap fr pc105 --no-convert
-arch-chroot /mnt localectl set-x11-keymap fr pc105 --no-convert
+pacman -Sy
+  
+# Installing Xorg and GPU support
+pacman -Sy --needed xorg xorg-drivers --noconfirm  
+ 
+# Installing XFCE4 and lightdm
+pacman -Sy --needed xfce4 xfce4-goodies lightdm lightdm-{gtk-greeter,gtk-greeter-settings} --noconfirm 
 
-arch-chroot /mnt localectl list-x11-keymap-layouts
+# Systemd enable lightdm
+systemctl enable lightdm
 
-alert_info "I" "FIN du script !" 
+########## Optional applications
+#######################################################
+
+alert_info "I" "Installation d'autres applications !" 
+sleep 2
+
+pacman -Sy --needed network-manager-applet leafpad capitaine-cursors arc-{gtk-theme,icon-theme} xdg-user-dirs-gtk git archlinux-wallpaper gnome-icon-theme-extras libreoffice-still-fr hunspell-fr firefox-{i18n-fr,ublock-origin} vlc ffmpegthumbnailer --noconfirm 
+ 
+# Audio supports
+alert_info "I" "Installation pour le support audio !" 
+sleep 2
+
+pacman -Sy --needed pulseaudio pavucontrol bluez pulseaudio-{alsa,bluetooth} alsa-utils blueman --noconfirm 
+  
+# Printer supports
+alert_info "I" "Installation pour le support imprimantes !" 
+sleep 2
+
+pacman -Sy --needed cups foomatic-{db,db-ppds,db-gutenprint-ppds,db-nonfree,db-nonfree-ppds} gutenprint system-config-printer --noconfirm 
+  
+# Device use MTP
+alert_info "I" "Installation pour le support des connexions via MTP !" 
+sleep 2
+pacman -Sy --needed  gvfs-mtp mtpfs --noconfirm 
+  
+# Fonts
+alert_info "I" "Installation de polices de charactères !" 
+sleep 2
+
+pacman -Sy --needed noto-fonts noto-fonts-{cjk,emoji,extra} ttf-{dejavu,roboto,ubuntu-font-family,bitstream-vera,liberation,arphic-uming,baekmuk} xorg-fonts-type1 sdl_ttf gsfonts --noconfirm 
+
+# Setup for support 32 bits applications
+alert_info "I" "Configuration pour le support des application en 32bits  !" 
+sleep 2
+
+sed -i.bak '/#\[multilib\]/,/#Include/ s/#//' /etc/pacman.conf
+
+# Setup keymap for X11 
+echo '  Section "InputClass"
+      Identifier         "Keyboard Layout"
+      MatchIsKeyboard    "yes"
+      Option             "XkbLayout"  "fr"
+      Option             "XkbVariant" "latin9"
+  EndSection
+' >> /etc/X11/xorg.conf.d/00-keyboard.conf
+
+# Update time
+timedatectl set-local-rtc 1
+timedatectl set-local-rtc 0
+EOF
+
+start_end
+
+alert_info "I" "FIN du script !"
 
 # Exit install
 umount --recursive /mnt && shutdown now
