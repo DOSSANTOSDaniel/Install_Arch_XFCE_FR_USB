@@ -49,9 +49,9 @@
 Il est obligatoire de fournir au moins le nom du disque et la phrase passe.
 
 Les données par défaut sont :
-	1. Nom utilisateur : userx
-	2. Mot de passe utilisateur : usertemppass
-	3. Nom de la machine : Arch
+	* Nom utilisateur : userx
+	* Mot de passe utilisateur : usertemppass
+	* Nom de la machine : Arch
 
 #### Limites des options
 
