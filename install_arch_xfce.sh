@@ -10,7 +10,7 @@
 # Bash_Version: 5.0.17(1)-release                                     
 #--------------------------------------------------#
 # Description: 
-# Ce script permet d'automatiser l'iinstallation d'Arch Linux sur clé USB
+# Ce script permet d'automatiser l'installation d'Arch Linux sur clé USB
 #                                                   
 #                                                                                                      
 #  Usage:
@@ -36,7 +36,7 @@
 # Licence:                                          
 #--------------------------------------------------#
 
-#set -eu
+set -e
 
 ### Includes ###
 
@@ -86,7 +86,7 @@ version() {
 EOF
 }
 
-
+# After interruption, do not restart
 execute_it_again() {
 if [[ -f /tmp/arch_install_usb ]]
 then
@@ -97,12 +97,12 @@ fi
 touch /tmp/arch_install_usb
 }
 
-
+# Checking the disc name 
 check_disk_name() {
   local disk="$1"
-  local regex="^[s][d][a-z]$"
+  local regex="^[sh][d][a-z]$"
 
-  if [[ $disk_name =~ ${regex} ]]
+  if [[ $disk =~ ${regex} ]]
   then
     echo "Disque : /dev/${disk}"
   else
@@ -132,17 +132,33 @@ alert_info() {
   fi
 }
 
+# Banner
 start_end() {
 clear
 
 cat <<"EOF"
 
-    _    ____   ____ _   _     ___ _   _ ____ _____  _    _     _
-   / \  |  _ \ / ___| | | |   |_ _| \ | / ___|_   _|/ \  | |   | |
-  / _ \ | |_) | |   | |_| |    | ||  \| \___ \ | | / _ \ | |   | |
- / ___ \|  _ <| |___|  _  |    | || |\  |___) || |/ ___ \| |___| |___
-/_/   \_\_| \_\\____|_| |_|___|___|_| \_|____/ |_/_/   \_\_____|_____|
-                         |_____|
+
+                   -`
+                  .o+`
+                 `ooo/
+                `+oooo:
+               `+oooooo:
+               -+oooooo+:
+             `/:-:++oooo+:
+            `/++++/+++++++:
+           `/++++++++++++++:
+          `/+++ooooooooooooo/`
+         ./ooosssso++osssssso+`
+        .oossssso-````/ossssss+`
+       -osssssso.      :ssssssso.
+      :osssssss/        osssso+++.
+     /ossssssss/        +ssssooo/-            _    ____   ____ _   _     ___ _   _ ____ _____  _    _     _
+   `/ossssso+/:-        -:/+osssso+-         / \  |  _ \ / ___| | | |   |_ _| \ | / ___|_   _|/ \  | |   | |
+  `+sso+:-`                 `.-/+oso:       / _ \ | |_) | |   | |_| |    | ||  \| \___ \ | | / _ \ | |   | |
+ `++:.                           `-/+/     / ___ \|  _ <| |___|  _  |    | || |\  |___) || |/ ___ \| |___| |___
+ .`                                 `/    /_/   \_\_| \_\\____|_| |_|   |___|_| \_|____/ |_/_/   \_\_____|_____|
+
 
 EOF
 
@@ -157,13 +173,13 @@ execute_it_again
 # User
 user_pass=''
 
-# Disque name and crypt pass
+# Disk name and encrypted password
 disk_crypt=''
 
-# Hostname and root pass
+# Hostname and root password
 host_name=''
 
-# Grub
+# Background for GRUB
 grub_background=true
 
 # Keyboard layout
@@ -175,7 +191,7 @@ language='fr_FR.UTF-8'
 # Localization
 geo_locale='Europe/Paris'
 
-# Export function to chroot env
+# Export function to chroot environment
 export -f alert_info
 
 if [[ $(id -u) -ne 0 ]]
@@ -198,7 +214,7 @@ do
       exit 1
       ;;
     d)
-      readonly disk_crypt="${OPTARG:?'Nom disque et pass obligatoire !'}"
+      readonly disk_crypt="${OPTARG:?'Nom disque et passe obligatoire !'}"
       ;;
     u)
       readonly user_pass="${OPTARG:='userx:usertemppass'}"
@@ -222,11 +238,11 @@ do
   esac
 done
 
-# User
+# User name and password
 username_name="$(echo "$user_pass" | cut -d: -f1)"
 username_pass="$(echo "$user_pass" | cut -d: -f2)"
 
-# Disque name and crypt pass
+# Disk name and encrypted password
 disk_name="$(echo "$disk_crypt" | cut -d: -f1)"
 disk_pass="$(echo "$disk_crypt" | cut -d: -f2)"
 
@@ -249,12 +265,8 @@ sleep 2
   
 # Creating Partitions
 # Clean and create GPT table
+wipefs --all /dev/"${disk_name}"
 sgdisk --zap-all /dev/"${disk_name}"
-sgdisk --clear /dev/"${disk_name}"
-
-alert_info 'I' "Etat du disque ${disk_name}"
-  
-sgdisk --verify /dev/"${disk_name}"
   
 # Partition 1 10Mb BIOS Boot
 sgdisk --new=1::+10M /dev/"${disk_name}"
@@ -292,43 +304,44 @@ alert_info "I" "Installation du système de base"
 # System installation and dependances
 pacstrap /mnt base linux linux-firmware linux-headers base-devel pacman-contrib grub networkmanager openssh dosfstools efibootmgr exfat-utils man-db man-pages man-pages-fr texinfo arch-install-scripts f2fs-tools
 
-# Apply partition table configs in fstab
+# Apply partition table configurations to fstab
 genfstab -U /mnt >> /mnt/etc/fstab
+
+set +e
 
 # Copy Grub background
 cp background.png /mnt/root
 
-########## Chroot ENV
+set -e
+
+########## Chroot environment
 ########################################
 # Enter in the new system (chroot) default shell is Bash
 arch-chroot /mnt << EOF
 
 # Setup lacalization and language
-
-ln -sf /usr/share/zoneinfo/$geo_locale /etc/localtime
-
-# Setup clock
-hwclock --systohc
+ln -sf /usr/share/zoneinfo/${geo_locale} /etc/localtime
 
 # Setup time server
-systemctl enable systemd-timesyncd
-
 sed -i 's/#NTP=/NTP=/' /etc/systemd/timesyncd.conf
 
 sed -i 's/^#FallbackNTP=.*/FallbackNTP=0.fr.pool.ntp.org 1.fr.pool.ntp.org 2.fr.pool.ntp.org 3.fr.pool.ntp.org/' /etc/systemd/timesyncd.conf
 
+systemctl enable systemd-timesyncd
+
 timedatectl set-ntp true
 
-# Setup time other  
-timedatectl set-local-rtc 0
-timedatectl --adjust-system-clock set-local-rtc 0
+timedatectl set-timezone $geo_locale
     
 # Setup system language and keyboard layout 
 sed -i 's/#'${language}' UTF-8/'${language}' UTF-8/g' /etc/locale.gen
 
 echo "LANG=${language}" > /etc/locale.conf  
-echo "LANGUAGE=fr_FR" >> /etc/locale.conf
+echo "LANGUAGE=${language%.UTF-8}" >> /etc/locale.conf
+
 echo "KEYMAP=$Keyboard_layout" > /etc/vconsole.conf
+
+echo "LC_ALL=${language}" >> /etc/environment
   
 locale-gen
 
@@ -356,12 +369,16 @@ sleep 2
 grub-install --target=i386-pc --boot-directory=/boot /dev/"${disk_name}"  
 grub-install --target=x86_64-efi --efi-directory=/boot --boot-directory=/boot --removable --recheck
   
-# Config to Grub boot with crypted partition 
+# Configuring Grub to boot with crypted partition 
 sed -i.bak "s/loglevel=3 quiet/loglevel=3 quiet cryptdevice=UUID=$(blkid /dev/"${disk_name}"3 -s UUID -o value):cryptroot root=\/dev\/mapper\/cryptroot/" /etc/default/grub
+
+set +e
 
 # Copy Grub background to /boot
 cp /root/background.png /boot/grub || grub_background=false
-  
+
+set -e
+
 # Change Grub background
 $grub_background && sed -i 's/#GRUB_BACKGROUND="\/path\/to\/wallpaper"/GRUB_BACKGROUND="\/boot\/grub\/background.png"/' /etc/default/grub
   
@@ -375,7 +392,7 @@ sleep 2
 useradd -m -G wheel "$username_name"
 echo ${username_name}:${username_pass} | chpasswd
 
-# Config sudoers file
+# Configuration of sudoers file
 sed -i.bak 's/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
 
 # Enable systemd services (NetworkManager and SSHD)
@@ -404,7 +421,7 @@ alert_info "I" "Installation de XFCE et autres applications !"
 sleep 2
 
 # Update mirrors
-pacman -Sy --needed reflector rsync --noconfirm
+pacman -S --needed reflector rsync --noconfirm
 
 cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
 
@@ -413,10 +430,10 @@ reflector --verbose --country France -l20 -p https,rsync --sort rate --save /etc
 pacman -Sy
   
 # Installing Xorg and GPU support
-pacman -Sy --needed xorg xorg-drivers --noconfirm  
+pacman -S --needed xorg xorg-drivers --noconfirm  
  
 # Installing XFCE4 and lightdm
-pacman -Sy --needed xfce4 xfce4-goodies lightdm lightdm-{gtk-greeter,gtk-greeter-settings} --noconfirm 
+pacman -S --needed xfce4 xfce4-goodies lightdm lightdm-{gtk-greeter,gtk-greeter-settings} --noconfirm 
 
 # Systemd enable lightdm
 systemctl enable lightdm
@@ -427,36 +444,38 @@ systemctl enable lightdm
 alert_info "I" "Installation d'autres applications !" 
 sleep 2
 
-pacman -Sy --needed network-manager-applet leafpad capitaine-cursors arc-{gtk-theme,icon-theme} xdg-user-dirs-gtk git archlinux-wallpaper gnome-icon-theme-extras libreoffice-still-fr hunspell-fr firefox-{i18n-fr,ublock-origin} vlc ffmpegthumbnailer --noconfirm 
+pacman -S --needed network-manager-applet leafpad capitaine-cursors arc-{gtk-theme,icon-theme} xdg-user-dirs-gtk git archlinux-wallpaper gnome-icon-theme-extras libreoffice-still-fr hunspell-fr firefox-{i18n-fr,ublock-origin} vlc ffmpegthumbnailer --noconfirm 
  
 # Audio supports
 alert_info "I" "Installation pour le support audio !" 
 sleep 2
 
-pacman -Sy --needed pulseaudio pavucontrol bluez pulseaudio-{alsa,bluetooth} alsa-utils blueman --noconfirm 
+pacman -S --needed pulseaudio pavucontrol bluez pulseaudio-{alsa,bluetooth} alsa-utils blueman --noconfirm 
   
 # Printer supports
 alert_info "I" "Installation pour le support imprimantes !" 
 sleep 2
 
-pacman -Sy --needed cups foomatic-{db,db-ppds,db-gutenprint-ppds,db-nonfree,db-nonfree-ppds} gutenprint system-config-printer --noconfirm 
+pacman -S --needed cups foomatic-{db,db-ppds,db-gutenprint-ppds,db-nonfree,db-nonfree-ppds} gutenprint system-config-printer --noconfirm 
   
 # Device use MTP
 alert_info "I" "Installation pour le support des connexions via MTP !" 
 sleep 2
-pacman -Sy --needed  gvfs-mtp mtpfs --noconfirm 
+pacman -S --needed  gvfs-mtp mtpfs --noconfirm 
   
 # Fonts
 alert_info "I" "Installation de polices de charactères !" 
 sleep 2
 
-pacman -Sy --needed noto-fonts noto-fonts-{cjk,emoji,extra} ttf-{dejavu,roboto,ubuntu-font-family,bitstream-vera,liberation,arphic-uming,baekmuk} xorg-fonts-type1 sdl_ttf gsfonts --noconfirm 
+pacman -S --needed noto-fonts noto-fonts-{cjk,emoji,extra} ttf-{dejavu,roboto,ubuntu-font-family,bitstream-vera,liberation,arphic-uming,baekmuk} xorg-fonts-type1 sdl_ttf gsfonts --noconfirm 
 
 # Setup for support 32 bits applications
 alert_info "I" "Configuration pour le support des application en 32bits  !" 
 sleep 2
 
 sed -i.bak '/#\[multilib\]/,/#Include/ s/#//' /etc/pacman.conf
+
+pacman -Sy
 
 # Setup keymap for X11 
 echo '  Section "InputClass"
@@ -467,9 +486,6 @@ echo '  Section "InputClass"
   EndSection
 ' >> /etc/X11/xorg.conf.d/00-keyboard.conf
 
-# Update time
-timedatectl set-local-rtc 1
-timedatectl set-local-rtc 0
 EOF
 
 start_end
