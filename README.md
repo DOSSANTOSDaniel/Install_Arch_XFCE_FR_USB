@@ -64,7 +64,7 @@ Cette installation fonctionne aussi bien sur un amorçage en UEFI qu'en BIOS leg
 
 La table des partitions est en GPT.
 
-La partition de travail est chiffrée.
+La partition de travail est chiffrée avec LUKS,(Linux Unified Key Setup).
 
   * Caractèristiques sur le chiffrement pas defaut :
       ```
