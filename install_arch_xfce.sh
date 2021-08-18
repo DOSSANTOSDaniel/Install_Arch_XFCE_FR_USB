@@ -392,6 +392,12 @@ sleep 2
 useradd -m -G wheel "$username_name"
 echo ${username_name}:${username_pass} | chpasswd
 
+# Change password of ROOT
+if [[ $(passwd --status root | awk '{print $2}') == 'NP' ]]
+then
+  echo root:${username_pass} | chpasswd
+fi
+
 # Configuration of sudoers file
 sed -i.bak 's/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
 
@@ -400,7 +406,7 @@ systemctl enable {NetworkManager,sshd}
 
 # Optional configurations
 # No adapt network interface name with hardware setup 
-ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
+ln -sf /dev/null /etc/udev/rules.d/80-net-setup-link.rules
   
 # Systemd journal in RAM
 sed -i.bak 's/#Storage=auto/Storage=volatile/' /etc/systemd/journald.conf

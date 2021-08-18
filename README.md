@@ -44,15 +44,26 @@
 #--------------------------------------------------#
 ```
 
-#### Les options
+#### Les caractéristiques de fonctionnement du script 
 
 Il est obligatoire de fournir au moins le nom du disque et la phrase passe.
+Si vous décider de juste remplir le nom du disque et la phrase passe alors des données par défaut seront appliquées pour les autres champs.
 
 Les données par défaut sont :
 
 * Nom utilisateur : userx
 * Mot de passe utilisateur : usertemppass
 * Nom de la machine : Arch
+
+Si on place une image avec comme extension ".png" et renommé en "background.png" à coté du script alors le script la prendra pour l'appliquer comme fond d'écran pour le menu de GRUB, ceci n'est pas obligatoire.
+
+* Taille recommandée pour l'image : 1920x1080
+
+Cette installation fonctionne aussi bien sur un amorçage en UEFI qu'en BIOS legacy, peut importe la configuration de la machine.
+
+La table des partitions est en GPT.
+
+A la fin du script la machine s’éteint.
 
 #### Limites des options
 
@@ -71,3 +82,5 @@ Les données par défaut sont :
 ### A faire
 
 - [ ] Ajouter la possibilité d'avoir une partition supplémentairement en FAT32.
+- [ ] Ajouter la possibilité de choisir l'algorithme de chiffrement et la taille de la clé.
+- [ ] Ajouter la possibilité d'avoir une partition "/home" séparée.
