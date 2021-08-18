@@ -54,6 +54,8 @@ Les données par défaut sont :
 * Mot de passe utilisateur : usertemppass
 * Nom de la machine : Arch
 
+Si le mot de passe root n'a pas été défini avant d'executer le script alors il sera défini avec le mot de passe utilisateur. 
+
 Si on place une image avec comme extension ".png" et renommé en "background.png" à coté du script alors le script la prendra pour l'appliquer comme fond d'écran pour le menu de GRUB, ceci n'est pas obligatoire.
 
 * Taille recommandée pour l'image : 1920x1080
