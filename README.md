@@ -4,7 +4,6 @@
 
 | Document | Description |
 |:--|:--|
-| usb_arch_linux_project.md | Documentation. |
 | before_install.md | Prérequis avant installation. |
 | install_arch.md | Installation d'Arch Linux de base. |
 | install_xfce.md | Installation et configuration d'un environnement graphique sous XFCE4. |
