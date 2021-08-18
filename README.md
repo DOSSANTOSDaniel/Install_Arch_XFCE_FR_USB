@@ -15,6 +15,8 @@
 1. Lancer l'image live d'Arch Linux sur un ordinateur.
 2. Copier ce dépôt dans le live d'Arch Linux ou copier juste le script et l'image de background.
 3. Exécuter le script avec les options adéquates.
+4. Une fois le script terminé la machine s’éteint.
+5. Vous pouvez maintenant ranger votre clé USB live d'Arch Linux et tester le support amovible où vous avez installé Arch Linux.
 
 ```Bash
 #--------------------------------------------------#
