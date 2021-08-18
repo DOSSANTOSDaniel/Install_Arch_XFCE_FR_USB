@@ -64,6 +64,17 @@ Cette installation fonctionne aussi bien sur un amorçage en UEFI qu'en BIOS leg
 
 La table des partitions est en GPT.
 
+La partition de travail est chiffrée.
+
+  * Caractèristiques sur le chiffrement pas defaut :
+      ```
+      loop-AES: aes, Key 256 bits
+    
+      plain: aes-cbc-essiv:sha256, Key: 256 bits, Password hashing: ripemd160
+
+      LUKS: aes-xts-plain64, Key: 256 bits, LUKS header hashing: sha256, RNG: /dev/urandom
+      ```
+
 A la fin du script la machine s’éteint.
 
 #### Limites des options
